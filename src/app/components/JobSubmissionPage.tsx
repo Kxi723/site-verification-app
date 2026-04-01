@@ -13,12 +13,18 @@ import { submission_datatype } from "../types";
 import { toast } from "sonner";
 
 export function submission_page() {
-  const navigate = useNavigate();
+  // Get current location and store it in ref
   const location = useLocation();
+  const initialKey = useRef(location.key);
+
+  // After submitted, show success page
+  const [submitted, display_success_page] = useState(false);
+
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSubmitting, submitting] = useState(false);
-  const [submitted, display_success_page] = useState(false);
+
 
   // Reset form and refresh current date & time
   const clean_form = (): submission_datatype => ({
@@ -28,37 +34,33 @@ export function submission_page() {
     contractorCompany: "", notes: "", personnelNames: [],
   });
 
+
   // When user click icon at the navigation bar or wanted to submit 
   // new job completion, system will clear session storage
   const clean_session_storage = () => {
     display_success_page(false);
     setFormData(clean_form());
-    setTeamPhotoData("");
+    set_photo_url("");
     setPersonnelInput("");
 
     sessionStorage.removeItem("jobFormData");
     sessionStorage.removeItem("jobPhotoData");
     sessionStorage.removeItem("jobPersonnelInput");
   };
-
-  const initialKey = useRef(location.key);
-
   useEffect(() => {
-    // Only reset if the layout nav bar is explicitly clicked AFTER initial mount.
-    // This prevents wiping the data we just restored from sessionStorage during a tab refresh.
+    // Prevents data cleaned during tab refresh
     if (location.key !== initialKey.current) {
       clean_session_storage();
       initialKey.current = location.key;
     }
-  }, [location.key]);
+  }, [location.key]); // When [location.key] changed, trigger this
 
-  // Load form data from session storage
-  const [formData, setFormData] = useState<Partial<submission_datatype>>(() => {
-    // 'Partial' used to allow update few data only
-    const session_data = sessionStorage.getItem("form_data");
 
-    // Load session data
-    if (session_data) {
+  // Load form contents from session storage
+  const [formData, setFormData] = useState<Partial<submission_datatype>>(() => { // 'Partial' used to allow update few data only
+    const session_data = sessionStorage.getItem("form");
+
+    if (session_data) { // Load session data
       try {
         return JSON.parse(session_data);
       }
@@ -66,39 +68,34 @@ export function submission_page() {
         toast.error("Failed to load session data | ", e);
       }
     }
-    // Leave blank
-    return clean_form();
+    return clean_form(); // Leave blank
   });
-
-  // Save data
   useEffect(() => {
-    sessionStorage.setItem("form_data", JSON.stringify(formData));
-  }, [formData]); // When [formData] changes trigger this
+    sessionStorage.setItem("form", JSON.stringify(formData));
+  }, [formData]); // Assign a key 'form_data' for 'formData', ease for tracking
 
-  const [photo, setTeamPhotoData] = useState<string>(() => {
-    return sessionStorage.getItem("photo_data") || "";
+
+  // Load photo from session storage, if none then remove it
+  const [photo_url, set_photo_url] = useState<string>(() => {
+    return sessionStorage.getItem("photo") || "";
   });
-
   useEffect(() => {
     try {
-      if (photo) {
-        sessionStorage.setItem("photo_data", photo);
-      } 
-      else {
-        sessionStorage.removeItem("photo_data");
-      }
+      if (photo_url) { sessionStorage.setItem("photo", photo_url); }
+      else { sessionStorage.removeItem("photo"); }
     }
     catch (e) {
       console.warn("Could not save photo to sessionStorage", e);
     }
-  }, [photo]);
+  }, [photo_url]);
 
+
+  // Load personnel list from session storage (becuz its not form, so do another)
   const [personnelInput, setPersonnelInput] = useState(() => {
-    return sessionStorage.getItem("personnel_list") || "";
+    return sessionStorage.getItem("personnel") || "";
   });
-
   useEffect(() => {
-    sessionStorage.setItem("personnel_list", personnelInput);
+    sessionStorage.setItem("personnel", personnelInput);
   }, [personnelInput]);
 
 
@@ -137,7 +134,7 @@ export function submission_page() {
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7); // 70% quality JPEG
-          setTeamPhotoData(compressedDataUrl);
+          set_photo_url(compressedDataUrl);
           toast.success("Photo captured successfully");
         }
       };
@@ -176,7 +173,7 @@ export function submission_page() {
       return;
     }
 
-    if (!photo) {
+    if (!photo_url) {
       toast.error("Please capture a team photo");
       return;
     }
@@ -196,7 +193,7 @@ export function submission_page() {
         completionTime: formData.completionTime!,
         contractorCompany: formData.contractorCompany!,
         notes: formData.notes || "",
-        photo: photo,
+        photo: photo_url,
         personnelNames: formData.personnelNames,
       };
 
@@ -366,10 +363,10 @@ export function submission_page() {
               ref = {fileInputRef}
               onChange = {handleFileChange}
             />
-            {photo ? (
+            {photo_url ? (
               <div className = "space-y-3">
                 <img
-                  src = {photo}
+                  src = {photo_url}
                   alt = "Team photo"
                   className="w-full h-64 object-cover rounded-lg"
                 />
