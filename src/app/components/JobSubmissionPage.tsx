@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import { Camera, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -14,35 +14,127 @@ import { toast } from "sonner";
 
 export function submission_page() {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [formData, setFormData] = useState<Partial<submission_datatype>>({
-    jobNumber: "",
-    jobType: "",
-    siteLocation: "",
-    completionDate: new Date().toISOString().split("T")[0],
-    completionTime: new Date().toTimeString().slice(0, 5),
-    contractorCompany: "",
-    notes: "",
-    personnelNames: [],
-  });
 
-  const [photo, setTeamPhotoData] = useState<string>("");
-  const [personnelInput, setPersonnelInput] = useState("");
   const [isSubmitting, submitting] = useState(false);
   const [submitted, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    // Only reset if the layout nav bar is explicitly clicked AFTER initial mount.
+    // This prevents wiping the data we just restored from sessionStorage during a tab refresh.
+    if (location.key !== initialKey.current) {
+      resetForm();
+      initialKey.current = location.key;
+    }
+  }, [location.key]);
+  
+  // Load form data from session storage
+  const [formData, setFormData] = useState<Partial<submission_datatype>>(() => {
+    // 'Partial' used to allow update few data only
+    const session_data = sessionStorage.getItem("form_data");
+
+    // Load session data
+    if (session_data) {
+      try {
+        return JSON.parse(session_data);
+      }
+      catch (e: any) {
+        toast.error("Failed to load session data | ", e);
+      }
+    }
+    // Leave blank
+    return {
+      jobNumber: "",
+      jobType: "",
+      siteLocation: "",
+      completionDate: new Date().toISOString().split("T")[0], // YYYY-MM-DDTHH:MM:SS.MMMZ
+      completionTime: new Date().toTimeString().slice(0,8),
+      contractorCompany: "",
+      notes: "",
+      personnelNames: [],
+    };
+  });
+
+  // Save data
+  useEffect(() => {
+    sessionStorage.setItem("form_data", JSON.stringify(formData));
+  }, [formData]); // When [formData] changes trigger this
+
+  const [photo, setTeamPhotoData] = useState<string>(() => {
+    return sessionStorage.getItem("photo_data") || "";
+  });
+
+  useEffect(() => {
+    try {
+      if (photo) {
+        sessionStorage.setItem("photo_data", photo);
+      } 
+      else {
+        sessionStorage.removeItem("photo_data");
+      }
+    }
+    catch (e) {
+      console.warn("Could not save photo to sessionStorage", e);
+    }
+  }, [photo]);
+
+  const [personnelInput, setPersonnelInput] = useState(() => {
+    return sessionStorage.getItem("personnel_list") || "";
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem("personnel_list", personnelInput);
+  }, [personnelInput]);
+
+  
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setTeamPhotoData(reader.result as string);
-        toast.success("Photo captured successfully");
+      // Compress image to save memory and prevent tab crashes on mobile
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        
+        const MAX_WIDTH = 1024;
+        const MAX_HEIGHT = 1024;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7); // 70% quality JPEG
+          setTeamPhotoData(compressedDataUrl);
+          toast.success("Photo captured successfully");
+        }
       };
-      reader.readAsDataURL(file);
-      // Reset input value so the same photo can be taken again if needed
-      e.target.value = "";
+      
+      img.onerror = () => {
+        toast.error("Failed to process image");
+      };
+      
+      img.src = objectUrl;
+      e.target.value = ""; // Reset input value so the same photo can be taken again if needed
     }
   };
 
@@ -101,6 +193,9 @@ export function submission_page() {
       if (result.success) {
         setSubmitSuccess(true);
         toast.success("Job completion submitted successfully!");
+        sessionStorage.removeItem("jobFormData");
+        sessionStorage.removeItem("jobPhotoData");
+        sessionStorage.removeItem("jobPersonnelInput");
       }
     } 
     catch (error) {
@@ -112,14 +207,46 @@ export function submission_page() {
     }
   };
 
+  const resetForm = () => {
+    setSubmitSuccess(false);
+    setFormData({
+      jobNumber: "",
+      jobType: "",
+      siteLocation: "",
+      completionDate: new Date().toISOString().split("T")[0],
+      completionTime: new Date().toTimeString().slice(0, 8),
+      contractorCompany: "",
+      notes: "",
+      personnelNames: [],
+    });
+    setTeamPhotoData("");
+    setPersonnelInput("");
+    
+    sessionStorage.removeItem("jobFormData");
+    sessionStorage.removeItem("jobPhotoData");
+    sessionStorage.removeItem("jobPersonnelInput");
+  };
+
+  const initialKey = useRef(location.key);
+
   // Display success message
   if (submitted) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="w-10 h-10 text-green-600" />
+      <div className="flex flex-col items-center justify-center py-12 space-y-6">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-10 h-10 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Job Submitted Successfully!</h2>
         </div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Job Submitted Successfully!</h2>
+        <div className="flex gap-4">
+          <Button onClick={resetForm}>
+            Submit Another Job
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/records")}>
+            Back to Records
+          </Button>
+        </div>
       </div>
     );
   }
@@ -149,6 +276,7 @@ export function submission_page() {
                   placeholder = "e.g., JOB-2026-001"
                   value = {formData.jobNumber}
                   onChange = {(e) => setFormData({ ...formData, jobNumber: e.target.value })}
+                  // '...formData' others data remain, but the specific field will be updated
                   required
                 />
               </div>
@@ -180,6 +308,7 @@ export function submission_page() {
                 value = {formData.siteLocation}
                 onChange = {(e) => setFormData({ ...formData, siteLocation: e.target.value })}
                 required
+                
               />
             </div>
 
