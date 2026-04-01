@@ -18,17 +18,40 @@ export function submission_page() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isSubmitting, submitting] = useState(false);
-  const [submitted, setSubmitSuccess] = useState(false);
+  const [submitted, display_success_page] = useState(false);
+
+  // Reset form and refresh current date & time
+  const clean_form = (): submission_datatype => ({
+    jobNumber: "", jobType: "", siteLocation: "",
+    completionDate: new Date().toISOString().split("T")[0], // YYYY-MM-DDTHH:MM:SS.MMMZ
+    completionTime: new Date().toTimeString().slice(0, 5), // cut here ||14:30||:45 GMT+0800
+    contractorCompany: "", notes: "", personnelNames: [],
+  });
+
+  // When user click icon at the navigation bar or wanted to submit 
+  // new job completion, system will clear session storage
+  const clean_session_storage = () => {
+    display_success_page(false);
+    setFormData(clean_form());
+    setTeamPhotoData("");
+    setPersonnelInput("");
+
+    sessionStorage.removeItem("jobFormData");
+    sessionStorage.removeItem("jobPhotoData");
+    sessionStorage.removeItem("jobPersonnelInput");
+  };
+
+  const initialKey = useRef(location.key);
 
   useEffect(() => {
     // Only reset if the layout nav bar is explicitly clicked AFTER initial mount.
     // This prevents wiping the data we just restored from sessionStorage during a tab refresh.
     if (location.key !== initialKey.current) {
-      resetForm();
+      clean_session_storage();
       initialKey.current = location.key;
     }
   }, [location.key]);
-  
+
   // Load form data from session storage
   const [formData, setFormData] = useState<Partial<submission_datatype>>(() => {
     // 'Partial' used to allow update few data only
@@ -44,16 +67,7 @@ export function submission_page() {
       }
     }
     // Leave blank
-    return {
-      jobNumber: "",
-      jobType: "",
-      siteLocation: "",
-      completionDate: new Date().toISOString().split("T")[0], // YYYY-MM-DDTHH:MM:SS.MMMZ
-      completionTime: new Date().toTimeString().slice(0,8),
-      contractorCompany: "",
-      notes: "",
-      personnelNames: [],
-    };
+    return clean_form();
   });
 
   // Save data
@@ -87,7 +101,6 @@ export function submission_page() {
     sessionStorage.setItem("personnel_list", personnelInput);
   }, [personnelInput]);
 
-  
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -191,7 +204,7 @@ export function submission_page() {
       const result = await submit_form(submission);
       
       if (result.success) {
-        setSubmitSuccess(true);
+        display_success_page(true);
         toast.success("Job completion submitted successfully!");
         sessionStorage.removeItem("jobFormData");
         sessionStorage.removeItem("jobPhotoData");
@@ -207,28 +220,6 @@ export function submission_page() {
     }
   };
 
-  const resetForm = () => {
-    setSubmitSuccess(false);
-    setFormData({
-      jobNumber: "",
-      jobType: "",
-      siteLocation: "",
-      completionDate: new Date().toISOString().split("T")[0],
-      completionTime: new Date().toTimeString().slice(0, 8),
-      contractorCompany: "",
-      notes: "",
-      personnelNames: [],
-    });
-    setTeamPhotoData("");
-    setPersonnelInput("");
-    
-    sessionStorage.removeItem("jobFormData");
-    sessionStorage.removeItem("jobPhotoData");
-    sessionStorage.removeItem("jobPersonnelInput");
-  };
-
-  const initialKey = useRef(location.key);
-
   // Display success message
   if (submitted) {
     return (
@@ -240,7 +231,7 @@ export function submission_page() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">Job Submitted Successfully!</h2>
         </div>
         <div className="flex gap-4">
-          <Button onClick={resetForm}>
+          <Button onClick={clean_session_storage}>
             Submit Another Job
           </Button>
           <Button variant="outline" onClick={() => navigate("/records")}>

@@ -3,7 +3,7 @@ const LOAD_FROM_MYSQL = import.meta.env.VITE_READ_FROM_MYSQL;
 const UPLOAD_TO_MYSQL = import.meta.env.VITE_UPLOAD_TO_MYSQL;
 
 
-export async function submit_form(submission: submission_datatype): Promise<{ success: boolean; jobId: string }> {
+export async function submit_form(submission: submission_datatype): Promise<{ success: boolean; }> {
   console.log("API Call: POST to " + UPLOAD_TO_MYSQL, submission);
   
   const formData = new FormData();
