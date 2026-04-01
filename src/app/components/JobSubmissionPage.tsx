@@ -13,18 +13,10 @@ import { submission_datatype } from "../types";
 import { toast } from "sonner";
 
 export function submission_page() {
+
   // Get current location and store it in ref
   const location = useLocation();
   const initialKey = useRef(location.key);
-
-  // After submitted, show success page
-  const [submitted, display_success_page] = useState(false);
-
-  const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [isSubmitting, submitting] = useState(false);
-
 
   // Reset form and refresh current date & time
   const clean_form = (): submission_datatype => ({
@@ -33,27 +25,6 @@ export function submission_page() {
     completionTime: new Date().toTimeString().slice(0, 5), // cut here ||14:30||:45 GMT+0800
     contractorCompany: "", notes: "", personnelNames: [],
   });
-
-
-  // When user click icon at the navigation bar or wanted to submit 
-  // new job completion, system will clear session storage
-  const clean_session_storage = () => {
-    display_success_page(false);
-    setFormData(clean_form());
-    set_photo_url("");
-    setPersonnelInput("");
-
-    sessionStorage.removeItem("jobFormData");
-    sessionStorage.removeItem("jobPhotoData");
-    sessionStorage.removeItem("jobPersonnelInput");
-  };
-  useEffect(() => {
-    // Prevents data cleaned during tab refresh
-    if (location.key !== initialKey.current) {
-      clean_session_storage();
-      initialKey.current = location.key;
-    }
-  }, [location.key]); // When [location.key] changed, trigger this
 
 
   // Load form contents from session storage
@@ -91,40 +62,55 @@ export function submission_page() {
 
 
   // Load personnel list from session storage (becuz its not form, so do another)
-  const [personnelInput, setPersonnelInput] = useState(() => {
+  const [team_member, set_member] = useState(() => {
     return sessionStorage.getItem("personnel") || "";
   });
   useEffect(() => {
-    sessionStorage.setItem("personnel", personnelInput);
-  }, [personnelInput]);
+    sessionStorage.setItem("personnel", team_member);
+  }, [team_member]);
+
+  // After submitted, show success page
+  const [submitted, display_success_page] = useState(false);
+
+  // When user click icon at the navigation bar or wanted to submit 
+  // new job completion, system will clear session storage
+  const clean_session_storage = () => {
+    display_success_page(false);
+    setFormData(clean_form());
+    set_photo_url("");
+    set_member("");
+
+    sessionStorage.removeItem("form");
+    sessionStorage.removeItem("photo");
+    sessionStorage.removeItem("personnel");
+  };
+  useEffect(() => {
+    // Prevents data cleaned during tab refresh
+    if (location.key !== initialKey.current) {
+      clean_session_storage();
+      initialKey.current = location.key;
+    }
+  }, [location.key]);
 
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image to save memory and prevent tab crashes on mobile
+  const compress_photo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Compress image to save memory and prevent tab crashes on mobile
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
+      const img = new Image(); // Create image object
+      const objectUrl = URL.createObjectURL(file); // Create a temporary URL in local
+      // like this blob:http://domain/abc-123-xyz
       
       img.onload = () => {
-        URL.revokeObjectURL(objectUrl);
+        URL.revokeObjectURL(objectUrl); // Free up memory
         
         const MAX_WIDTH = 1024;
         const MAX_HEIGHT = 1024;
         let width = img.width;
         let height = img.height;
-        
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
+        // Calculate compressed width & height
+        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+        else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
         
         const canvas = document.createElement("canvas");
         canvas.width = width;
@@ -133,7 +119,7 @@ export function submission_page() {
         
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7); // 70% quality JPEG
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.9);
           set_photo_url(compressedDataUrl);
           toast.success("Photo captured successfully");
         }
@@ -148,42 +134,47 @@ export function submission_page() {
     }
   };
 
-  const handleAddPersonnel = () => {
-    if (personnelInput.trim()) {
+  const add_personnel = () => {
+    if (team_member.trim()) {
       setFormData({
-        ...formData,
-        personnelNames: [...(formData.personnelNames || []), personnelInput.trim()],
+        ...formData, 
+        personnelNames: [...(formData.personnelNames || []), team_member.trim()],
+        // 'formData.personnelNames || []' choose existing array or create empty array
+        // '...' spread operator copies the previous value of personnelNames
+        // '[...(), member.trim()]' add the new member to the end of the array
       });
-      setPersonnelInput("");
+      set_member("");
     }
   };
 
-  const handleRemovePersonnel = (index: number) => {
+  const remove_personnel = (index: number) => {
     setFormData({
       ...formData,
       personnelNames: formData.personnelNames?.filter((_, i) => i !== index) || [],
+      // If not null, then filter, else return empty []
+      // .filter(value, index), because no need value so '_'
     });
   };
 
-  const handle_submission = async (e: React.SubmitEvent) => {
+  // When uploading data to db, button will be disabled
+  const [is_submitting, submit_in_process] = useState(false);
+  const handle_submission = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Cancel native behaviour of the submit button
 
     if (!formData.jobType) {
       toast.error("Please select a job type");
       return;
     }
-
     if (!photo_url) {
       toast.error("Please capture a team photo");
       return;
     }
-
     if (!formData.personnelNames || formData.personnelNames.length === 0) {
       toast.error("Please add at least one team member");
       return;
     }
 
-    submitting(true);
+    submit_in_process(true);
     try {
       const submission: submission_datatype = {
         jobNumber: formData.jobNumber!,
@@ -203,9 +194,12 @@ export function submission_page() {
       if (result.success) {
         display_success_page(true);
         toast.success("Job completion submitted successfully!");
-        sessionStorage.removeItem("jobFormData");
-        sessionStorage.removeItem("jobPhotoData");
-        sessionStorage.removeItem("jobPersonnelInput");
+        sessionStorage.removeItem("form");
+        sessionStorage.removeItem("photo");
+        sessionStorage.removeItem("personnel");
+      } else {
+        toast.error(result.message || "Failed to submit job completion. API returned success: false");
+        console.error("API response failure:", result);
       }
     } 
     catch (error) {
@@ -213,9 +207,12 @@ export function submission_page() {
       console.error(error);
     } 
     finally {
-      submitting(false);
+      submit_in_process(false);
     }
   };
+  
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Display success message
   if (submitted) {
@@ -361,14 +358,15 @@ export function submission_page() {
               capture = "environment"
               className = "hidden"
               ref = {fileInputRef}
-              onChange = {handleFileChange}
+              onChange = {compress_photo}
             />
+            {/* If have photo then display it with retake button, else display capture button */}
             {photo_url ? (
               <div className = "space-y-3">
                 <img
                   src = {photo_url}
                   alt = "Team photo"
-                  className="w-full h-64 object-cover rounded-lg"
+                  className="w-full h-auto object-cover rounded-lg"
                 />
                 <Button
                   type = "button"
@@ -414,11 +412,12 @@ export function submission_page() {
             <div className = "flex gap-2">
               <Input
                 placeholder = "Enter personnel name"
-                value = {personnelInput}
-                onChange = {(e) => setPersonnelInput(e.target.value)}
-                onKeyPress = {(e) => e.key === "Enter" && (e.preventDefault(), handleAddPersonnel())}
+                value = {team_member}
+                onChange = {(e) => set_member(e.target.value)}
+                // If user press 'enter' then auto add. Also 'enter' wont submit the form
+                onKeyPress = {(e) => e.key === "Enter" && (e.preventDefault(), add_personnel())} 
               />
-              <Button type = "button" onClick={handleAddPersonnel}>
+              <Button type = "button" onClick = {add_personnel}>
                 Add
               </Button>
             </div>
@@ -435,7 +434,7 @@ export function submission_page() {
                       type = "button"
                       variant = "ghost"
                       size = "sm"
-                      onClick={() => handleRemovePersonnel(index)}
+                      onClick={() => remove_personnel(index)}
                     >
                       Remove
                     </Button>
@@ -465,8 +464,8 @@ export function submission_page() {
           </Button>
           
           {/* Submit button */}
-          <Button type = "submit" className = "flex-1" disabled={isSubmitting}>
-            {isSubmitting ? (
+          <Button type = "submit" className = "flex-1" disabled={is_submitting}>
+            {is_submitting ? (
               <>
                 <Loader2 className = "w-4 h-4 mr-2 animate-spin" />
                 Submitting...
