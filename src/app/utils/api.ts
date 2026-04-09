@@ -1,4 +1,4 @@
-import { submission_datatype, JobRecord } from "../types";
+import { submission_datatype, record_datatype } from "../types";
 const LOAD_FROM_MYSQL = import.meta.env.VITE_READ_FROM_MYSQL;
 const UPLOAD_TO_MYSQL = import.meta.env.VITE_UPLOAD_TO_MYSQL;
 
@@ -41,7 +41,7 @@ export async function submit_form(submission: submission_datatype): Promise<{ su
 }
 
 
-export async function read_from_db(): Promise<JobRecord[]> {
+export async function read_from_db(): Promise<record_datatype[]> {
   console.log("API Call: GET " + LOAD_FROM_MYSQL);
 
   try {
