@@ -108,9 +108,16 @@ export function submission_page() {
         const MAX_HEIGHT = 1024;
         let width = img.width;
         let height = img.height;
+
         // Calculate compressed width & height
-        if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
-        else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+        if (width > height) { 
+          if (width > MAX_WIDTH) { 
+            height *= MAX_WIDTH / width; width = MAX_WIDTH; 
+          } }
+        else { 
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height; height = MAX_HEIGHT; 
+          } }
         
         const canvas = document.createElement("canvas");
         canvas.width = width;
@@ -194,12 +201,10 @@ export function submission_page() {
       if (result.success) {
         display_success_page(true);
         toast.success("Job completion submitted successfully!");
+
         sessionStorage.removeItem("form");
         sessionStorage.removeItem("photo");
         sessionStorage.removeItem("personnel");
-      } else {
-        toast.error(result.message || "Failed to submit job completion. API returned success: false");
-        console.error("API response failure:", result);
       }
     } 
     catch (error) {
@@ -210,7 +215,7 @@ export function submission_page() {
       submit_in_process(false);
     }
   };
-  
+ 
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
