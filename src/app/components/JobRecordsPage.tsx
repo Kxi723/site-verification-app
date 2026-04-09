@@ -115,18 +115,28 @@ export function records_page() {
     }
   };
 
+  const escapeCSVField = (field: string): string => {
+    const str = String(field); // 防止非字符串类型
+    // 如果包含逗号、双引号或换行符，则用双引号包裹
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+      return `"${str.replace(/"/g, '""')}"`;  // 内部的 " 替换为 ""
+    }
+    return str;
+  };
+
   const exportToCSV = () => {
-    const headers = ["Job Number", "Site Location", "Job Type", "Completion Date", "Personnel", "Sync Status"];
+    const headers = ["Job Number", "Job Type", "Site Location", "Completion Date", "Personnel", "Company", "Sync Status"];
     const rows = filteredJobs.map(job => [
       job.jobNumber,
-      job.siteLocation,
       job.jobType,
+      job.siteLocation,
       `${job.completionDate} ${job.completionTime}`,
       job.personnelNames.join("; "),
+      job.contractorCompany,
       job.huaweiSyncStatus
     ]);
     
-    const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+    const csv = [headers, ...rows].map(row => row.map(escapeCSVField).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -224,41 +234,44 @@ export function records_page() {
           {filteredJobs.map((job) => (
             <Card key={job.id}>
               <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <CardTitle className="text-lg">{job.jobNumber}</CardTitle>
-                      <Badge variant="outline">{job.jobType}</Badge>
-                      {getSyncStatusBadge(job.huaweiSyncStatus)}
-                    </div>
-                    <CardDescription className="flex flex-col gap-1">
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium">Location:</span> {job.siteLocation}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium">Completed:</span> {job.completionDate} at {job.completionTime}
-                      </span>
-                    </CardDescription>
+                <div className="flex flex-col gap-3">
+                  {/* Row 1: Job number + type */}
+                  <div className="flex items-center gap-3">
+                    <CardTitle className="text-lg">{job.jobNumber}</CardTitle>
+                    <Badge variant="outline">{job.jobType}</Badge>
                   </div>
-                  {job.huaweiSyncStatus === "pending" && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleSyncToHuawei(job.id)}
-                      disabled={syncingJobId === job.id}
-                    >
-                      {syncingJobId === job.id ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                          Syncing...
-                        </>
-                      ) : (
-                        <>
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Sync to Huawei
-                        </>
-                      )}
-                    </Button>
-                  )}
+                  {/* Row 2: Sync status + button */}
+                  <div className="flex items-center gap-3">
+                    {getSyncStatusBadge(job.huaweiSyncStatus)}
+                    {job.huaweiSyncStatus === "pending" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleSyncToHuawei(job.id)}
+                        disabled={syncingJobId === job.id}
+                      >
+                        {syncingJobId === job.id ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Syncing...
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Sync to Huawei
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                  {/* Row 3: Location & Completed */}
+                  <CardDescription className="flex flex-col gap-1">
+                    <span className="flex items-start gap-2">
+                      <span className="font-medium shrink-0">Location:</span> {job.siteLocation}
+                    </span>
+                    <span className="flex items-start gap-2">
+                      <span className="font-medium shrink-0">Completed:</span> {job.completionDate} at {job.completionTime}
+                    </span>
+                  </CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
