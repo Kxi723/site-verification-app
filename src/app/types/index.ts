@@ -1,4 +1,4 @@
-export interface JobRecord {
+export interface record_datatype {
   id: string;
   jobNumber: string;
   siteLocation: string;

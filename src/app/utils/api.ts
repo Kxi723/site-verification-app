@@ -2,7 +2,6 @@ import { submission_datatype, JobRecord } from "../types";
 const LOAD_FROM_MYSQL = import.meta.env.VITE_READ_FROM_MYSQL;
 const UPLOAD_TO_MYSQL = import.meta.env.VITE_UPLOAD_TO_MYSQL;
 
-
 export async function submit_form(submission: submission_datatype): Promise<{ success: boolean; message?: string; jobId?: string | number; }> {
   console.log("API Call: POST to " + UPLOAD_TO_MYSQL, submission);
 
@@ -53,6 +52,7 @@ export async function read_from_db(): Promise<JobRecord[]> {
     }
 
     const data = await response.json();
+
     if (data.success) {
       return data.jobs;
     }

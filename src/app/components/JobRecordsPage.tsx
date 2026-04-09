@@ -7,13 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { read_from_db, syncToHuawei } from "../utils/api";
-import { JobRecord } from "../types";
+import { record_datatype } from "../types";
 import { toast } from "sonner";
 
 export function records_page() {
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState<JobRecord[]>([]);
-  const [filteredJobs, setFilteredJobs] = useState<JobRecord[]>([]);
+  const [jobs, setJobs] = useState<record_datatype[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<record_datatype[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -89,7 +89,7 @@ export function records_page() {
     }
   };
 
-  const getSyncStatusBadge = (status: JobRecord["huaweiSyncStatus"]) => {
+  const getSyncStatusBadge = (status: record_datatype["huaweiSyncStatus"]) => {
     switch (status) {
       case "synced":
         return (
