@@ -5,7 +5,7 @@ const UPLOAD_TO_MYSQL = import.meta.env.VITE_UPLOAD_TO_MYSQL;
 
 export async function submit_form(submission: submission_datatype): Promise<{ success: boolean; message?: string; jobId?: string | number; }> {
   console.log("API Call: POST to " + UPLOAD_TO_MYSQL, submission);
-  
+
   const formData = new FormData();
   formData.append('jobNumber', submission.jobNumber);
   formData.append('jobType', submission.jobType);
@@ -14,9 +14,9 @@ export async function submit_form(submission: submission_datatype): Promise<{ su
   formData.append('completionTime', submission.completionTime);
   formData.append('contractorCompany', submission.contractorCompany);
   formData.append('notes', submission.notes);
-  
+
   submission.personnelNames.forEach(name => formData.append('personnelNames[]', name));
-  
+
   // Convert base64 to blob (Binary Large Object) for upload
   if (submission.photo) {
     const photo_blob = await fetch(submission.photo).then(r => r.blob());
@@ -28,12 +28,13 @@ export async function submit_form(submission: submission_datatype): Promise<{ su
       method: 'POST',
       body: formData
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+
     return await response.json();
-  } 
+  }
   catch (error) {
     console.error("Fetch error:", error);
     throw error;
@@ -43,18 +44,18 @@ export async function submit_form(submission: submission_datatype): Promise<{ su
 
 export async function read_from_db(): Promise<JobRecord[]> {
   console.log("API Call: GET " + LOAD_FROM_MYSQL);
-  
+
   try {
     const response = await fetch(LOAD_FROM_MYSQL);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
     if (data.success) {
       return data.jobs;
-    } 
+    }
     else {
       throw new Error(data.message || "Failed to fetch job records");
     }
