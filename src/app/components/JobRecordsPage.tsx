@@ -14,7 +14,7 @@ export function records_page() {
 
   // Default value is true, so it will show loading screen first
   const [is_loading, loading] = useState(true);
-  const [job_records, load_records] = useState<record_datatype[]>([]);
+  const [all_records, load_records] = useState<record_datatype[]>([]);
 
   // Load data from db when page load or refresh btn clicked
   const load_data = async () => {
@@ -33,13 +33,13 @@ export function records_page() {
   useEffect(() => { load_data(); }, []);
 
 
-  const [search_keywords, setSearchQuery] = useState("");
+  const [search_keywords, set_keywords] = useState("");
   // Default value is "all", no filter applied first
-  const [sync_status, setStatusFilter] = useState<string>("all");
-  const [job_searched, filter_jobs] = useState<record_datatype[]>([]);
+  const [sync_status, set_filter] = useState<string>("all");
+  const [jobs_displayed, filter_jobs] = useState<record_datatype[]>([]);
   // Start filter when user type keywords or select sync status
   useEffect(() => { 
-    let job_details = [...job_records];
+    let job_details = [...all_records];
 
     if (search_keywords.trim()) {
       const keywords = search_keywords.toLowerCase();
@@ -61,7 +61,7 @@ export function records_page() {
     // Sort by creation date (newest - oldest)
     job_details.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     filter_jobs(job_details); 
-  }, [job_records, search_keywords, sync_status]);
+  }, [all_records, search_keywords, sync_status]);
 
   const navigate = useNavigate();
 
@@ -78,7 +78,7 @@ export function records_page() {
 
   const export_csv = () => {
     const headers = ["Job Number", "Job Type", "Site Location", "Completion Date", "Personnel", "Company", "Sync Status"];
-    const rows = job_searched.map(job => [
+    const rows = jobs_displayed.map(job => [
       job.jobNumber,
       job.jobType,
       job.siteLocation,
@@ -100,26 +100,26 @@ export function records_page() {
   };
 
 
-  const getSyncStatusBadge = (status: record_datatype["huaweiSyncStatus"]) => {
-    switch (status) {
+  const status_badge = (sync_status: record_datatype["huaweiSyncStatus"]) => {
+    switch (sync_status) {
       case "synced":
         return (
-          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-            <CheckCircle className="w-3 h-3 mr-1" />
+          <Badge variant = "default" className="bg-green-100 text-green-800 hover:bg-green-100">
+            <CheckCircle className = "w-3 h-3 mr-1" />
             Synced
           </Badge>
         );
       case "pending":
         return (
-          <Badge variant="default" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-            <Clock className="w-3 h-3 mr-1" />
+          <Badge variant = "default" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+            <Clock className = "w-3 h-3 mr-1" />
             Pending
           </Badge>
         );
       case "failed":
         return (
-          <Badge variant="default" className="bg-red-100 text-red-800 hover:bg-red-100">
-            <XCircle className="w-3 h-3 mr-1" />
+          <Badge variant = "default" className="bg-red-100 text-red-800 hover:bg-red-100">
+            <XCircle className = "w-3 h-3 mr-1" />
             Failed
           </Badge>
         );
@@ -127,18 +127,22 @@ export function records_page() {
   };
 
 
-  const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
-  const demo_sync = async (jobId: string) => {
-    setSyncingJobId(jobId);
+  const [syncing_job, job_to_sync] = useState<string | null>(null);
+  const handle_sync = async (sync_id: string) => {
+    job_to_sync(sync_id);
+
     try {
-      const result = await sync_to_huawei(jobId);
+      const result = await sync_to_huawei(sync_id);
 
       if (result.success) {
         toast.success("Job synced to Huawei ISC system");
+
         // Update local state
-        load_records(job_records.map(job => 
-          job.id === jobId 
+        load_records(all_records.map(job => 
+          job.id === sync_id 
+          // If match, then update the status
             ? { ...job, huaweiSyncStatus: "synced" as const, huaweiSyncDate: new Date().toISOString() }
+            // If not, then keep original data
             : job
         ));
       }
@@ -147,63 +151,62 @@ export function records_page() {
       toast.error("Failed to sync job to Huawei");
       console.error(error);
     }
-    finally { setSyncingJobId(null); }
+    finally { job_to_sync(null); }
   };
-
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className = "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Job Records</h2>
-          <p className="text-gray-600 mt-1">View and manage completed jobs</p>
+          <h2 className = "text-2xl font-semibold text-gray-900">Job Records</h2>
+          <p className = "text-gray-600 mt-1">View and manage completed jobs</p>
         </div>
-        <Button onClick={() => navigate("/")}>
+        <Button onClick = {() => navigate("/")}>
           Submit New Job
         </Button>
       </div>
 
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <Card className = "mb-6">
+        <CardContent className = "pt-6">
+          <div className = "grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className = "md:col-span-2">
+              <div className = "relative">
+                <Search className = "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
                 <Input
-                  placeholder="Search by job number, location, company, or personnel..."
-                  value={search_keywords}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  placeholder = "Search by job number, location, company, or personnel..."
+                  value = {search_keywords}
+                  onChange = {(e) => set_keywords(e.target.value)}
+                  className = "pl-9"
                 />
               </div>
             </div>
             <div>
-              <Select value={sync_status} onValueChange={setStatusFilter}>
+              <Select value = {sync_status} onValueChange = {set_filter}>
                 <SelectTrigger>
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
+                  <Filter className = "w-4 h-4 mr-2"/>
+                  <SelectValue placeholder = "Filter by status"/>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="synced">Synced</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value = "all">All Status</SelectItem>
+                  <SelectItem value = "synced">Synced</SelectItem>
+                  <SelectItem value = "pending">Pending</SelectItem>
+                  <SelectItem value = "failed">Failed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-4 pt-4 border-t">
-            <p className="text-sm text-gray-600">
-              Showing {job_searched.length} of {job_records.length} records
+          <div className = "flex items-center justify-between mt-4 pt-4 border-t">
+            <p className = "text-sm text-gray-600">
+              Showing {jobs_displayed.length} of {all_records.length} records
             </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={load_data}>
-                <RefreshCw className="w-4 h-4 mr-2" />
+            <div className = "flex gap-2">
+              <Button variant = "outline" size = "sm" onClick = {load_data}>
+                <RefreshCw className = "w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm" onClick={export_csv}>
-                <Download className="w-4 h-4 mr-2" />
+              <Button variant = "outline" size = "sm" onClick = {export_csv}>
+                <Download className = "w-4 h-4 mr-2" />
                 Export CSV
               </Button>
             </div>
@@ -213,21 +216,20 @@ export function records_page() {
 
       {/* Job Records List */}
       {is_loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        // Show loading icon
+        <div className = "flex items-center justify-center py-12">
+          <div className = "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/>
         </div>
-      ) : job_searched.length === 0 ? (
+      ) : jobs_displayed.length === 0 ? (
+        // Show no data found
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-gray-600">No job records found</p>
+          <CardContent className = "py-12 text-center">
+            <p className = "text-gray-600">No job records found</p>
             {search_keywords || sync_status !== "all" ? (
               <Button
-                variant="link"
-                onClick={() => {
-                  setSearchQuery("");
-                  setStatusFilter("all");
-                }}
-                className="mt-2"
+                variant = "link"
+                onClick = {() => { set_keywords(""); set_filter("all"); }}
+                className = "mt-2"
               >
                 Clear filters
               </Button>
@@ -235,68 +237,66 @@ export function records_page() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {job_searched.map((job) => (
-            <Card key={job.id}>
+        // Show job records
+        <div className = "space-y-4">
+          {jobs_displayed.map((job) => (
+            <Card key = {job.id}>
               <CardHeader>
-                <div className="flex flex-col gap-3">
-                  {/* Row 1: Job number + type */}
-                  <div className="flex items-center gap-3">
-                    <CardTitle className="text-lg">{job.jobNumber}</CardTitle>
-                    <Badge variant="outline">{job.jobType}</Badge>
+                <div className = "flex flex-col gap-3">
+                  <div className = "flex items-center gap-3">
+                    <CardTitle className = "text-lg">{job.jobNumber}</CardTitle>
+                    <Badge variant = "outline">{job.jobType}</Badge>
                   </div>
-                  {/* Row 2: Sync status + button */}
-                  <div className="flex items-center gap-3">
-                    {getSyncStatusBadge(job.huaweiSyncStatus)}
+
+                  <div className = "flex items-center gap-3">
+                    {status_badge(job.huaweiSyncStatus)}
                     {job.huaweiSyncStatus === "pending" && (
                       <Button
-                        size="sm"
-                        onClick={() => demo_sync(job.id)}
-                        disabled={syncingJobId === job.id}
+                        size = "sm"
+                        onClick = {() => handle_sync(job.id)}
+                        disabled = {syncing_job === job.id}
                       >
-                        {syncingJobId === job.id ? (
+                        {syncing_job === job.id ? (
                           <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            <RefreshCw className = "w-4 h-4 mr-2 animate-spin" />
                             Syncing...
                           </>
                         ) : (
                           <>
-                            <ExternalLink className="w-4 h-4 mr-2" />
+                            <ExternalLink className = "w-4 h-4 mr-2" />
                             Sync to Huawei
                           </>
                         )}
                       </Button>
                     )}
                   </div>
-                  {/* Row 3: Location & Completed */}
-                  <CardDescription className="flex flex-col gap-1">
-                    <span className="flex items-start gap-2">
-                      <span className="font-medium shrink-0">Location:</span> {job.siteLocation}
+
+                  <CardDescription className = "flex flex-col gap-1">
+                    <span className = "flex items-start gap-2">
+                      <span className = "font-medium shrink-0">Location:</span> {job.siteLocation}
                     </span>
-                    <span className="flex items-start gap-2">
-                      <span className="font-medium shrink-0">Completed:</span> {job.completionDate} at {job.completionTime}
+                    <span className = "flex items-start gap-2">
+                      <span className = "font-medium shrink-0">Completed:</span> {job.completionDate} at {job.completionTime}
                     </span>
                   </CardDescription>
                 </div>
               </CardHeader>
+
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Team Photo */}
+                <div className = "grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <img
-                      src={job.teamPhotoUrl}
-                      alt="Team photo"
-                      className="w-full h-48 object-cover rounded-lg"
+                      src = {job.teamPhotoUrl}
+                      alt = "Team photo"
+                      className = "w-full h-auto object-cover rounded-lg"
                     />
                   </div>
-
-                  {/* Job Details */}
-                  <div className="md:col-span-2 space-y-4">
+                  <div className = "md:col-span-2 space-y-4">
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Team Personnel</h4>
-                      <div className="flex flex-wrap gap-2">
+                      <h4 className = "text-sm font-medium text-gray-700 mb-2">Team Personnel</h4>
+                      <div className = "flex flex-wrap gap-2">
                         {job.personnelNames.map((name, index) => (
-                          <Badge key={index} variant="secondary">
+                          <Badge key = {index} variant = "secondary">
                             {name}
                           </Badge>
                         ))}
@@ -304,20 +304,20 @@ export function records_page() {
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Contractor Company</h4>
-                      <p className="text-sm text-gray-900">{job.contractorCompany}</p>
+                      <h4 className = "text-sm font-medium text-gray-700 mb-1">Contractor Company</h4>
+                      <p className = "text-sm text-gray-900">{job.contractorCompany}</p>
                     </div>
 
                     {job.notes && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Notes</h4>
-                        <p className="text-sm text-gray-600">{job.notes}</p>
+                        <h4 className = "text-sm font-medium text-gray-700 mb-1">Notes</h4>
+                        <p className = "text-sm text-gray-600">{job.notes}</p>
                       </div>
                     )}
 
                     {job.huaweiSyncStatus === "synced" && job.huaweiSyncDate && (
-                      <div className="pt-2 border-t">
-                        <p className="text-xs text-gray-500">
+                      <div className = "pt-2 border-t">
+                        <p className = "text-xs text-gray-500">
                           Synced to Huawei ISC: {new Date(job.huaweiSyncDate).toLocaleString()}
                         </p>
                       </div>
