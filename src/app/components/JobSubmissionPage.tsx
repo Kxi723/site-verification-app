@@ -22,7 +22,7 @@ export function submission_page() {
   const clean_form = (): submission_datatype => ({
     jobNumber: "", jobType: "", siteLocation: "",
     completionDate: new Date().toISOString().split("T")[0], // YYYY-MM-DDTHH:MM:SS.MMMZ
-    completionTime: new Date().toTimeString().slice(0, 5), // cut here ||14:30||:45 GMT+0800
+    completionTime: new Date().toTimeString().slice(0, 8), // cut here ||14:30:00|| GMT+0800
     contractorCompany: "", notes: "", personnelNames: [],
   });
 
@@ -36,7 +36,7 @@ export function submission_page() {
         return JSON.parse(session_data);
       }
       catch (e: any) {
-        toast.error("Failed to load session data | ", e);
+        toast.error(`Failed to load session data | ${e} `);
       }
     }
     return clean_form(); // Leave blank
@@ -420,8 +420,7 @@ export function submission_page() {
                 value = {team_member}
                 onChange = {(e) => set_member(e.target.value)}
                 // If user press 'enter' then auto add. Also 'enter' wont submit the form
-                onKeyPress = {(e) => e.key === "Enter" && (e.preventDefault(), add_personnel())} 
-              />
+                onKeyDown = {(e) => { if (e.key === "Enter") { e.preventDefault(); add_personnel(); }}}/>
               <Button type = "button" onClick = {add_personnel}>
                 Add
               </Button>
