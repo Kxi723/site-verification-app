@@ -33,10 +33,13 @@ export function records_page() {
   useEffect(() => { load_data(); }, []);
 
 
+  // Keywords when user want to search job records
   const [search_keywords, set_keywords] = useState("");
+
   // Default value is "all", no filter applied first
   const [sync_status, set_filter] = useState<string>("all");
-  const [jobs_displayed, filter_jobs] = useState<record_datatype[]>([]);
+
+  const [jobs_displayed, set_display_jobs] = useState<record_datatype[]>([]);
   // Start filter when user type keywords or select sync status
   useEffect(() => { 
     let job_details = [...all_records];
@@ -60,12 +63,12 @@ export function records_page() {
 
     // Sort by creation date (newest - oldest)
     job_details.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    filter_jobs(job_details); 
+    set_display_jobs(job_details); 
   }, [all_records, search_keywords, sync_status]);
 
   const navigate = useNavigate();
 
-
+  // Helper function to handle comma, double quote, and newline
   const comma_saver = (field: string): string => {
     const str = String(field); // In case isnt a string
 
@@ -88,7 +91,6 @@ export function records_page() {
       job.huaweiSyncStatus
     ]);
 
-
     const csv = [headers, ...rows].map(row => row.map(comma_saver).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -100,6 +102,7 @@ export function records_page() {
   };
 
 
+  // Show different badge based on sync status
   const status_badge = (sync_status: record_datatype["huaweiSyncStatus"]) => {
     switch (sync_status) {
       case "synced":
@@ -127,7 +130,9 @@ export function records_page() {
   };
 
 
+  // Track which id is syncing
   const [syncing_job, job_to_sync] = useState<string | null>(null);
+  // If sync btn clicked, find the id and update the status
   const handle_sync = async (sync_id: string) => {
     job_to_sync(sync_id);
 
