@@ -2,12 +2,20 @@
 
 class Database {
     // Database credentials
-    private $host = "localhost";
-    private $db_name = "intern_apr2026"; 
-    private $username = "root";  
-    private $password = "123";
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
     private $charset = 'utf8mb4';
     public $conn;
+
+    public function __construct() {
+        $env = parse_ini_file(__DIR__ . '/../.env');
+        $this->host = $env['DB_HOST'];
+        $this->db_name = $env['DB_NAME'];
+        $this->username = $env['DB_USER'];
+        $this->password = $env['DB_PASS'];
+    }
 
     public function getConnection() {
         $this->conn = null;
