@@ -2,8 +2,8 @@ import { submission_datatype, record_datatype } from "../types";
 const LOAD_FROM_MYSQL = import.meta.env.VITE_READ_FROM_MYSQL;
 const UPLOAD_TO_MYSQL = import.meta.env.VITE_UPLOAD_TO_MYSQL;
 
-export async function submit_form(submission: submission_datatype): Promise<{ success: boolean; message?: string; jobId?: string | number; }> {
-  console.log("API Call: POST to " + UPLOAD_TO_MYSQL, submission);
+export async function submit_form(submission: submission_datatype): 
+Promise<{ success: boolean; message?: string; jobId?: string | number; }> {
 
   const formData = new FormData();
   formData.append('jobNumber', submission.jobNumber);
@@ -13,7 +13,6 @@ export async function submit_form(submission: submission_datatype): Promise<{ su
   formData.append('completionTime', submission.completionTime);
   formData.append('contractorCompany', submission.contractorCompany);
   formData.append('notes', submission.notes);
-
   submission.personnelNames.forEach(name => formData.append('personnelNames[]', name));
 
   // Convert base64 to blob (Binary Large Object) for upload
@@ -42,8 +41,6 @@ export async function submit_form(submission: submission_datatype): Promise<{ su
 
 
 export async function read_from_db(): Promise<record_datatype[]> {
-  console.log("API Call: GET " + LOAD_FROM_MYSQL);
-
   try {
     const response = await fetch(LOAD_FROM_MYSQL);
 
@@ -66,17 +63,9 @@ export async function read_from_db(): Promise<record_datatype[]> {
   }
 }
 
-
-export async function sync_to_huawei(jobId: string): Promise<{ success: boolean; syncStatus: string }> {
-  console.log("API Call: POST /php/submission/" + jobId + "/sync-huawei");
-  
+// No function
+export async function sync_to_huawei(jobId: string): 
+Promise<{ success: boolean; syncStatus: string }> {
   await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // In production:
-  // const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/sync-huawei`, {
-  //   method: 'POST'
-  // });
-  // return await response.json();
-  
   return { success: true, syncStatus: "synced" };
 }
