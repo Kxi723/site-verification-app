@@ -98,6 +98,7 @@ export function records_page() {
     a.href = url;
     a.download = `job_records_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
     toast.success("Job records exported");
   };
 
@@ -142,8 +143,8 @@ export function records_page() {
       if (result.success) {
         toast.success("Job synced to Huawei ISC system");
 
-        // Update local state
-        load_records(all_records.map(job => 
+        // Update the latest state
+        load_records(prev => prev.map(job => 
           job.id === sync_id 
           // If match, then update the status
             ? { ...job, huaweiSyncStatus: "synced" as const, huaweiSyncDate: new Date().toISOString() }
