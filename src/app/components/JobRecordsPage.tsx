@@ -6,88 +6,99 @@ import { Input } from "./ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { read_from_db, syncToHuawei } from "../utils/api";
+import { read_from_db, sync_to_huawei } from "../utils/api";
 import { record_datatype } from "../types";
 import { toast } from "sonner";
 
 export function records_page() {
-  const navigate = useNavigate();
-  const [jobs, setJobs] = useState<record_datatype[]>([]);
-  const [filteredJobs, setFilteredJobs] = useState<record_datatype[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadJobs();
-  }, []);
+  // Default value is true, so it will show loading screen first
+  const [is_loading, loading] = useState(true);
+  const [job_records, load_records] = useState<record_datatype[]>([]);
 
-  useEffect(() => {
-    filterJobs();
-  }, [jobs, searchQuery, statusFilter]);
+  // Load data from db when page load or refresh btn clicked
+  const load_data = async () => {
+    loading(true);
 
-  const loadJobs = async () => {
-    setLoading(true);
     try {
       const data = await read_from_db();
-      setJobs(data);
-    } 
+      load_records(data);
+    }
     catch (error) {
       toast.error("Failed to load job records");
       console.error(error);
-    } 
-    finally {
-      setLoading(false);
     }
+    finally { loading(false); }
   };
+  useEffect(() => { load_data(); }, []);
 
-  const filterJobs = () => {
-    let filtered = [...jobs];
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
+  const [search_keywords, setSearchQuery] = useState("");
+  // Default value is "all", no filter applied first
+  const [sync_status, setStatusFilter] = useState<string>("all");
+  const [job_searched, filter_jobs] = useState<record_datatype[]>([]);
+  // Start filter when user type keywords or select sync status
+  useEffect(() => { 
+    let job_details = [...job_records];
+
+    if (search_keywords.trim()) {
+      const keywords = search_keywords.toLowerCase();
+      // Filter() return a list of data that match the condition
+      job_details = job_details.filter(
         (job) =>
-          job.jobNumber.toLowerCase().includes(query) ||
-          job.siteLocation.toLowerCase().includes(query) ||
-          job.contractorCompany.toLowerCase().includes(query) ||
-          job.personnelNames.some((name) => name.toLowerCase().includes(query))
+          job.jobNumber.toLowerCase().includes(keywords) ||
+          job.siteLocation.toLowerCase().includes(keywords) ||
+          job.contractorCompany.toLowerCase().includes(keywords) ||
+          // Some() return true if at least one element match the condition
+          job.personnelNames.some((name) => name.toLowerCase().includes(keywords))
       );
     }
 
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((job) => job.huaweiSyncStatus === statusFilter);
+    if (sync_status !== "all") {
+      job_details = job_details.filter((job) => job.huaweiSyncStatus === sync_status);
     }
 
-    // Sort by creation date (newest first)
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort by creation date (newest - oldest)
+    job_details.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    filter_jobs(job_details); 
+  }, [job_records, search_keywords, sync_status]);
 
-    setFilteredJobs(filtered);
-  };
+  const navigate = useNavigate();
 
-  const handleSyncToHuawei = async (jobId: string) => {
-    setSyncingJobId(jobId);
-    try {
-      const result = await syncToHuawei(jobId);
-      if (result.success) {
-        toast.success("Job synced to Huawei ISC system");
-        // Update local state
-        setJobs(jobs.map(job => 
-          job.id === jobId 
-            ? { ...job, huaweiSyncStatus: "synced" as const, huaweiSyncDate: new Date().toISOString() }
-            : job
-        ));
-      }
-    } catch (error) {
-      toast.error("Failed to sync job to Huawei");
-      console.error(error);
-    } finally {
-      setSyncingJobId(null);
+
+  const comma_saver = (field: string): string => {
+    const str = String(field); // In case isnt a string
+
+    // Use "" to cover the sentence
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+      return `"${str.replace(/"/g, '""')}"`;  // If have "" inside, give them another""
     }
+    return str;
   };
+
+  const export_csv = () => {
+    const headers = ["Job Number", "Job Type", "Site Location", "Completion Date", "Personnel", "Company", "Sync Status"];
+    const rows = job_searched.map(job => [
+      job.jobNumber,
+      job.jobType,
+      job.siteLocation,
+      `${job.completionDate} ${job.completionTime}`,
+      job.personnelNames.join("; "),
+      job.contractorCompany,
+      job.huaweiSyncStatus
+    ]);
+
+
+    const csv = [headers, ...rows].map(row => row.map(comma_saver).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `job_records_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    toast.success("Job records exported");
+  };
+
 
   const getSyncStatusBadge = (status: record_datatype["huaweiSyncStatus"]) => {
     switch (status) {
@@ -115,36 +126,30 @@ export function records_page() {
     }
   };
 
-  const escapeCSVField = (field: string): string => {
-    const str = String(field); // 防止非字符串类型
-    // 如果包含逗号、双引号或换行符，则用双引号包裹
-    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-      return `"${str.replace(/"/g, '""')}"`;  // 内部的 " 替换为 ""
+
+  const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
+  const demo_sync = async (jobId: string) => {
+    setSyncingJobId(jobId);
+    try {
+      const result = await sync_to_huawei(jobId);
+
+      if (result.success) {
+        toast.success("Job synced to Huawei ISC system");
+        // Update local state
+        load_records(job_records.map(job => 
+          job.id === jobId 
+            ? { ...job, huaweiSyncStatus: "synced" as const, huaweiSyncDate: new Date().toISOString() }
+            : job
+        ));
+      }
     }
-    return str;
+    catch (error) {
+      toast.error("Failed to sync job to Huawei");
+      console.error(error);
+    }
+    finally { setSyncingJobId(null); }
   };
 
-  const exportToCSV = () => {
-    const headers = ["Job Number", "Job Type", "Site Location", "Completion Date", "Personnel", "Company", "Sync Status"];
-    const rows = filteredJobs.map(job => [
-      job.jobNumber,
-      job.jobType,
-      job.siteLocation,
-      `${job.completionDate} ${job.completionTime}`,
-      job.personnelNames.join("; "),
-      job.contractorCompany,
-      job.huaweiSyncStatus
-    ]);
-    
-    const csv = [headers, ...rows].map(row => row.map(escapeCSVField).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `job-records-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    toast.success("Job records exported");
-  };
 
   return (
     <div>
@@ -166,14 +171,14 @@ export function records_page() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Search by job number, location, company, or personnel..."
-                  value={searchQuery}
+                  value={search_keywords}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
             </div>
             <div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={sync_status} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
@@ -190,14 +195,14 @@ export function records_page() {
 
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
             <p className="text-sm text-gray-600">
-              Showing {filteredJobs.length} of {jobs.length} records
+              Showing {job_searched.length} of {job_records.length} records
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={loadJobs}>
+              <Button variant="outline" size="sm" onClick={load_data}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm" onClick={exportToCSV}>
+              <Button variant="outline" size="sm" onClick={export_csv}>
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
@@ -207,15 +212,15 @@ export function records_page() {
       </Card>
 
       {/* Job Records List */}
-      {loading ? (
+      {is_loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      ) : filteredJobs.length === 0 ? (
+      ) : job_searched.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-gray-600">No job records found</p>
-            {searchQuery || statusFilter !== "all" ? (
+            {search_keywords || sync_status !== "all" ? (
               <Button
                 variant="link"
                 onClick={() => {
@@ -231,7 +236,7 @@ export function records_page() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredJobs.map((job) => (
+          {job_searched.map((job) => (
             <Card key={job.id}>
               <CardHeader>
                 <div className="flex flex-col gap-3">
@@ -246,7 +251,7 @@ export function records_page() {
                     {job.huaweiSyncStatus === "pending" && (
                       <Button
                         size="sm"
-                        onClick={() => handleSyncToHuawei(job.id)}
+                        onClick={() => demo_sync(job.id)}
                         disabled={syncingJobId === job.id}
                       >
                         {syncingJobId === job.id ? (

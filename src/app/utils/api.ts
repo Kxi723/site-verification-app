@@ -67,7 +67,7 @@ export async function read_from_db(): Promise<record_datatype[]> {
 }
 
 
-export async function syncToHuawei(jobId: string): Promise<{ success: boolean; syncStatus: string }> {
+export async function sync_to_huawei(jobId: string): Promise<{ success: boolean; syncStatus: string }> {
   console.log("API Call: POST /php/submission/" + jobId + "/sync-huawei");
   
   await new Promise(resolve => setTimeout(resolve, 1500));
