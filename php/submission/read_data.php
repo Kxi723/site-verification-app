@@ -1,9 +1,8 @@
 <?php
-
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// embed PHP code from another file
+// Embed PHP code from another file
 include_once '../config/database.php';
 // Initialise
 $database = new Database();
@@ -37,8 +36,8 @@ try {
         $job = [
             "id" => (string)$row['id'],
             "jobNumber" => $row['job_number'],
-            "siteLocation" => $row['site_location'],
             "jobType" => $row['job_type'],
+            "siteLocation" => $row['site_location'],
             "completionDate" => $row['completion_date'],
             "completionTime" => $row['completion_time'],
             "contractorCompany" => isset($row['contractor_company']) ? $row['contractor_company'] : '',
