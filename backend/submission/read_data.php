@@ -10,7 +10,7 @@ $db = $database->getConnection();
 
 try {
     // Display the latest
-    $query = "SELECT * FROM job_submission ORDER BY id DESC";
+    $query = "SELECT * FROM form_data ORDER BY id DESC";
 
     // Prepare() is a more secure method
     $stmt = $db->prepare($query);

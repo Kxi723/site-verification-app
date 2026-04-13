@@ -13,7 +13,7 @@ $database = new Database();
 $db = $database->getConnection();
 
 try {
-    $query = "SELECT photo FROM job_submission WHERE id = ?";
+    $query = "SELECT photo FROM form_data WHERE id = ?";
     $stmt = $db->prepare($query);
     $stmt->execute([$id]);
 

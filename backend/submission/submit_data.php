@@ -49,7 +49,7 @@ if (isset($_FILES['photoFile']) && $_FILES['photoFile']['error'] === UPLOAD_ERR_
 
 
 try {
-    $query = "INSERT INTO job_submission 
+    $query = "INSERT INTO form_data 
               (job_number, job_type, site_location, completion_date, completion_time, 
                contractor_company, job_notes, photo, team_personnel, sync_status) 
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
