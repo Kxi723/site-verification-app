@@ -11,13 +11,20 @@ class Database {
     public $conn;
 
     public function __construct() {
-        $env = parse_ini_file(__DIR__ . '/../.env');
-        $this->host = $env['DB_HOST'];
-        $this->db_name = $env['DB_NAME'];
-        $this->username = $env['DB_USER'];
-        $this->password = $env['DB_PASS'];
-        // Default to Aiven MySQL common port 25060 if DB_PORT is not in .env, otherwise use 3306 or DB_PORT
-        $this->port = isset($env['DB_PORT']) ? $env['DB_PORT'] : '25060'; 
+        // ✅ Railway 用系统环境变量，不是 .env 文件
+        // 本地开发时先 fallback 到 .env
+        $env = [];
+        $envFile = __DIR__ . '/../.env';
+        if (file_exists($envFile)) {
+            $env = parse_ini_file($envFile);
+        }
+
+        // getenv() 优先读 Railway 注入的环境变量，找不到才用 .env
+        $this->host     = getenv('DB_HOST')     ?: ($env['DB_HOST']     ?? '');
+        $this->db_name  = getenv('DB_NAME')     ?: ($env['DB_NAME']     ?? '');
+        $this->username = getenv('DB_USER')     ?: ($env['DB_USER']     ?? '');
+        $this->password = getenv('DB_PASS')     ?: ($env['DB_PASS']     ?? '');
+        $this->port     = getenv('DB_PORT')     ?: ($env['DB_PORT']     ?? '25060');
     }
 
     public function getConnection() {
