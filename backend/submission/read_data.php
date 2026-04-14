@@ -23,6 +23,12 @@ try {
     $stmt = $db->prepare($query);
     $stmt->execute();
 
+    // Dynamically build the base URL so that it works across different environments (like Railway and Vercel)
+    $protocol = (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+    $basePath = rtrim(dirname($_SERVER['REQUEST_URI']), '/');
+    $baseUrl = $protocol . $host . $basePath;
+
     $jobs = [];
 
     // Store fetched data into $row, 'FETCH_ASSOC' assign key with value: "name" => "John"
@@ -51,7 +57,7 @@ try {
             "notes" => isset($row['job_notes']) ? $row['job_notes'] : '',
             "personnelNames" => $personnel_array,
             "huaweiSyncStatus" => isset($row['sync_status']) ? $row['sync_status'] : "pending",
-            "teamPhotoUrl" => "/submission/read_images.php?id=" . $row['id'],
+            "teamPhotoUrl" => $baseUrl . "/read_images.php?id=" . $row['id'],
             "createdAt" => isset($row['created_at']) ? $row['created_at'] : $row['completion_date'],
         ];
         
@@ -66,4 +72,3 @@ catch(PDOException $e) {
     http_response_code(500);
     echo json_encode(["success" => false, "message" => "SQL Error: " . $e->getMessage()]);
 }
-?>
