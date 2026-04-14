@@ -44,7 +44,7 @@ try {
             "notes" => isset($row['job_notes']) ? $row['job_notes'] : '',
             "personnelNames" => $personnel_array,
             "huaweiSyncStatus" => isset($row['sync_status']) ? $row['sync_status'] : "pending",
-            "teamPhotoUrl" => "/php/submission/read_images.php?id=" . $row['id'],
+            "teamPhotoUrl" => "/submission/read_images.php?id=" . $row['id'],
             "createdAt" => isset($row['created_at']) ? $row['created_at'] : $row['completion_date'],
         ];
         
