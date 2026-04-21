@@ -6,11 +6,11 @@
 
 Traditional reporting methods often suffer from several critical issues that I aimed to solve with this project:
 
-- **1. Fraudulent Submissions:** Contractors might upload duplicate photos from their gallery to impersonate real-time progress.
+**1. Fraudulent Submissions:** Contractors might upload duplicate photos from their gallery to impersonate real-time progress.
 
-- **2. Resource Crashes & Data Loss:** Opening the camera on mobile devices is resource-intensive and often triggers a browser refresh, causing users to lose all typed form data.
+**2. Resource Crashes & Data Loss:** Opening the camera on mobile devices is resource-intensive and often triggers a browser refresh, causing users to lose all typed form data.
 
-- **3. Duplicate Records:** Poor network feedback often leads users to submit the same form multiple times, creating redundant data in the database.
+**3. Duplicate Records:** Poor network feedback often leads users to submit the same form multiple times, creating redundant data in the database.
 
 ## ⚙️ How It Works (The Logic)
 
