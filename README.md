@@ -47,28 +47,38 @@ To prevent the "Double-Click" redundancy issue:
 
 This project is configured for local development and testing.
 
-### 1. Frontend Setup
+### 1. Environment Variable (.env) Setup
+
+You must configure `.env` files for both the frontend and backend to ensure they communicate with the database and each other.
+
+**Backend (`backend/config/.env`):**
+Create an `.env` file in `backend/config` to configure your MySQL connection.
+```env
+DB_HOST=...
+DB_PORT=...
+DB_NAME=...
+DB_USER=...
+DB_PASS=...
+```
+
+**Frontend (`frontend/.env`):**
+Create an `.env` file in `frontend/` directory to define your API endpoints.
+```env
+VITE_READ_FROM_MYSQL="/backend/submission/read_data.php"
+VITE_UPLOAD_TO_MYSQL="/backend/submission/submit_data.php"
+```
+
+### 2. Backend Installation
+
+1. Ensure you have a local PHP environment running (e.g., XAMPP, MAMP).
+2. Start your MySQL server and run the necessary SQL queries to construct your tables.
+3. Serve the `backend` folder from your local server.
+
+### 3. Frontend Installation
 
 Navigate to the `frontend` directory and start the Vite development server:
 ```bash
 cd frontend
 npm install
 npm run dev
-```
-
-### 2. Backend Setup
-
-The backend handles the core logic and database interactions.
-
-1. Ensure you have a local PHP environment running (e.g., XAMPP, MAMP, or a standalone PHP server).
-2. Configure your MySQL database and run the initial setup script to create the necessary tables.
-3. Update your database configuration (e.g., inside `backend/config/`) to match your local MySQL credentials.
-4. Host the `backend` folder on your local server (e.g., `http://localhost/backend`) so the frontend API calls can reach it.
-
-### 3. API Configuration
-
-To link the frontend and backend, configure your local environment API base URL in the frontend:
-```typescript
-// Example: src/app/utils/api.ts or related config
-VITE_READ_FROM_MYSQL = "/backend/submission/read_data.php"";
 ```
