@@ -1,42 +1,49 @@
 # 📃 Job Completion System
 
-> A full-stack, responsive web application designed to streamline and verify contractor job completions. Built as a functional prototype, this system emphasizes **real-time on-site verification** using live camera capture to ensure authentic proof of work.
+> A robust, full-stack reporting website designed for contractors to submit job completion data. This system eliminates fraudulent reporting by enforcing real-time camera capture.
 
-## 🎯 Overview
+## 📖 Background & Problem Statement
 
-This system modernizes field job reporting by allowing contractors to:
-- Securely record and submit job completions on-site.
-- **Capture real-time team photos directly via the device camera** 📸, bypassing traditional file uploads to prevent fraudulent or outdated image submissions.
-- Manage personnel attendance and job accountability.
-- View and manage submitted job records through an intuitive dashboard.
+Traditional reporting methods often suffer from several critical issues that I aimed to solve with this project:
 
-## ✨ Key Features
+- **1. Fraudulent Submissions:** Contractors might upload duplicate photos from their gallery to impersonate real-time progress.
 
-### On-Site Camera Verification
-- **Live Camera Integration**: Utilizes the modern HTML5 `MediaDevices` API for real-time camera access.
-- **Authentic Verification**: Forces live capture (no gallery uploads) to prove the contractor's real-time presence.
-- **Base64 Image Processing**: Images are seamlessly captured, encoded to Base64, and transmitted securely to the backend.
+- **2. Resource Crashes & Data Loss:** Opening the camera on mobile devices is resource-intensive and often triggers a browser refresh, causing users to lose all typed form data.
 
-### Job Submission & Management
-- **Structured Data Entry**: Submit comprehensive job details including site location, timestamp, and personnel notes.
-- **Dashboard Records**: Fetch and display historical job submissions stored securely in the database.
-- **Image Retrieval**: Specific endpoints dedicated to efficiently serving BLOB image data to the frontend frontend.
+- **3. Duplicate Records:** Poor network feedback often leads users to submit the same form multiple times, creating redundant data in the database.
 
-## 🏗️ Tech Stack
+## ⚙️ How It Works (The Logic)
 
-### Frontend
-- **Framework**: React 18 with TypeScript (Bootstrapped via Vite)
-- **Styling**: Tailwind CSS v4 for utility-first, responsive design
-- **Icons & UI**: Lucide React & Sonner (for toast notifications)
-- **Routing**: React Router DOM
+### 1. `Anti-Fraud Camera Verification`
+To guarantee the authenticity of work, the system bypasses the traditional "file upload" method:
+- **Mandatory Live Capture:** The system utilizes the HTML5 MediaDevices API to call the device camera directly.
+- **No Gallery Access:** Users are restricted from selecting photos from their phone, ensuring the evidence is captured on-site and in real-time.
 
-### Backend
-- **Language**: PHP 7.4+
-- **Database**: MySQL / MariaDB
-- **Architecture**: RESTful API design (`submit_data.php`, `read_data.php`, `read_images.php`)
-- **Security**: PDO Prepared Statements for SQL injection prevention
+### 2. `Intelligent Data Handling & Protection`
+- **Auto-Timestamping:** The application automatically retrieves and fills the current date and time to maintain chronological accuracy, while still allowing for manual adjustments.
+- **Session Persistence:** To combat page refreshes caused by high memory usage (camera activation), **Session Storage** is implemented to save all input data. If the page reloads, the contractor's progress is automatically restored.
+- **Strict Validation:** Every field is mandatory; the system triggers a warning if any information is missing, ensuring a complete dataset for every entry.
 
-## 🚀 Quick Start
+### 3. `Submission Safety Buffer`
+To prevent the "Double-Click" redundancy issue:
+- **Success Stay-Page:** Upon a successful upload, the system does not immediately redirect. Instead, it holds the user on a "Success" confirmation screen.
+- **Manual Acknowledgement:** The user must manually click a button to return to the dashboard, ensuring they are fully aware the submission was successful before attempting another.
+
+## 📁 Repository Structure
+
+```text
+/
+├── backend/                  # PHP REST API Endpoints
+│   ├── config/               # Database and environment configurations
+│   └── submission/           # API handlers for data writing and retrieval
+├── frontend/                 # React Application
+│   ├── src/                  # Components, Contexts (Session handling), and Hooks
+│   ├── package.json          # Dependency management
+│   └── vite.config.ts        # Vite configuration
+└── README.md                 # Project Documentation
+```
+
+## 🚀 Quick Start Guide
 
 This project is configured for local development and testing.
 
@@ -54,7 +61,7 @@ npm run dev
 The backend handles the core logic and database interactions.
 
 1. Ensure you have a local PHP environment running (e.g., XAMPP, MAMP, or a standalone PHP server).
-2. Configure your MySQL database and run the initial setup script to create the necessary tables (`job_records`, etc.).
+2. Configure your MySQL database and run the initial setup script to create the necessary tables.
 3. Update your database configuration (e.g., inside `backend/config/`) to match your local MySQL credentials.
 4. Host the `backend` folder on your local server (e.g., `http://localhost/backend`) so the frontend API calls can reach it.
 
@@ -63,23 +70,5 @@ The backend handles the core logic and database interactions.
 To link the frontend and backend, configure your local environment API base URL in the frontend:
 ```typescript
 // Example: src/app/utils/api.ts or related config
-const API_BASE_URL = "http://localhost/backend";
+VITE_READ_FROM_MYSQL = "/backend/submission/read_data.php"";
 ```
-
-## 📂 Project Structure
-
-```text
-/
-├── backend/                  # PHP REST API Endpoints
-│   ├── config/               # Database and environment configurations
-│   └── submission/           # API handlers (read/write data & images)
-├── frontend/                 # React Application
-│   ├── src/                  # React components, contexts, and hooks
-│   ├── package.json          # Dependency management
-│   └── vite.config.ts        # Vite configuration
-└── README.md                 # Project Documentation
-```
-
-## 💡 Developer Notes
-
-This project was developed as an MVP (Minimum Viable Product)/Prototype to demonstrate cross-environment readiness and secure device-feature integration. The codebase effectively bridges a modern JavaScript SPA with a robust, traditional PHP API. While currently configured for a localized setup to facilitate easy sharing and reviewing, the architecture inherently supports standard cloud and containerized deployment workflows (e.g., Vercel + Railway environments).
