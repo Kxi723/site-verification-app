@@ -1,308 +1,85 @@
-# Contractor Job Completion System
+# 📃 Job Completion System
 
-A comprehensive web application for managing contractor job completions with **real-time camera verification** and automatic sync to Huawei ISC system.
+> A full-stack, responsive web application designed to streamline and verify contractor job completions. Built as a functional prototype, this system emphasizes **real-time on-site verification** using live camera capture to ensure authentic proof of work.
 
 ## 🎯 Overview
 
-This system streamlines the process of:
-- Recording job completions at contractor sites
-- **Capturing real-time team photos via device camera** 📸
-- Managing personnel accountability
-- Syncing job data to Huawei ISC for billing verification
+This system modernizes field job reporting by allowing contractors to:
+- Securely record and submit job completions on-site.
+- **Capture real-time team photos directly via the device camera** 📸, bypassing traditional file uploads to prevent fraudulent or outdated image submissions.
+- Manage personnel attendance and job accountability.
+- View and manage submitted job records through an intuitive dashboard.
 
 ## ✨ Key Features
 
-### Job Submission
-- ✅ Submit job completion details with required fields
-- 📸 **Real-time camera capture for team photos (no file uploads)**
-- 👥 Track team personnel on each job
-- 📝 Add completion notes and observations
+### On-Site Camera Verification
+- **Live Camera Integration**: Utilizes the modern HTML5 `MediaDevices` API for real-time camera access.
+- **Authentic Verification**: Forces live capture (no gallery uploads) to prove the contractor's real-time presence.
+- **Base64 Image Processing**: Images are seamlessly captured, encoded to Base64, and transmitted securely to the backend.
 
-### Camera Verification
-- 📷 Live camera access with front/back camera switching
-- 🎯 Real-time preview before capture
-- 🔄 Retake capability for perfect shots
-- ✅ Authentic on-site verification (no old/stock photos)
+### Job Submission & Management
+- **Structured Data Entry**: Submit comprehensive job details including site location, timestamp, and personnel notes.
+- **Dashboard Records**: Fetch and display historical job submissions stored securely in the database.
+- **Image Retrieval**: Specific endpoints dedicated to efficiently serving BLOB image data to the frontend frontend.
 
-### Job Records
-- 🔍 Search and filter all job records
-- 📥 Export data to CSV
-- 🔄 Manual sync retry for failed jobs
-- 📊 View sync status at a glance
-
-### Huawei Integration
-- 🚀 Automatic sync on job submission
-- 📡 RESTful API integration
-- 📋 Sync logging and error tracking
-- 🔁 Manual retry capability
-
-## 🏗️ Architecture
+## 🏗️ Tech Stack
 
 ### Frontend
-- **React 18** with TypeScript
-- **React Router** for navigation
-- **Tailwind CSS v4** for styling
-- **MediaDevices API** for camera access
-- **Lucide React** for icons
-- **Sonner** for toast notifications
+- **Framework**: React 18 with TypeScript (Bootstrapped via Vite)
+- **Styling**: Tailwind CSS v4 for utility-first, responsive design
+- **Icons & UI**: Lucide React & Sonner (for toast notifications)
+- **Routing**: React Router DOM
 
-### Backend (PHP)
-- **PHP 7.4+** with PDO
-- **MySQL/MariaDB** database
-- **RESTful API** design
-- **Base64 image handling**
-- **Huawei ISC** API integration
-
-## 📁 Project Structure
-
-```
-/
-├── src/
-│   ├── app/
-│   │   ├── components/
-│   │   │   ├── Layout.tsx              # Main layout with navigation
-│   │   │   ├── JobSubmissionPage.tsx   # Job submission form
-│   │   │   ├── JobRecordsPage.tsx      # Job records list
-│   │   │   ├── TeamManagementPage.tsx  # Team photo management
-│   │   │   └── ui/                     # Reusable UI components
-│   │   ├── types/
-│   │   │   └── index.ts                # TypeScript interfaces
-│   │   ├── utils/
-│   │   │   ├── api.ts                  # API integration layer
-│   │   │   └── mockData.ts             # Demo data
-│   │   ├── App.tsx                     # Root component
-│   │   └── routes.tsx                  # Route configuration
-│   └── styles/                         # CSS files
-├── PHP_BACKEND_GUIDE.md               # Complete PHP backend docs
-├── SYSTEM_DOCUMENTATION.md             # Full system documentation
-└── README.md                           # This file
-```
+### Backend
+- **Language**: PHP 7.4+
+- **Database**: MySQL / MariaDB
+- **Architecture**: RESTful API design (`submit_data.php`, `read_data.php`, `read_images.php`)
+- **Security**: PDO Prepared Statements for SQL injection prevention
 
 ## 🚀 Quick Start
 
-### Frontend Setup
+This project is configured for local development and testing.
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 1. Frontend Setup
 
-2. **Run development server**
-   ```bash
-   npm run dev
-   ```
-
-3. **Build for production**
-   ```bash
-   npm run build
-   ```
-
-### Backend Setup
-
-See **[PHP_BACKEND_GUIDE.md](PHP_BACKEND_GUIDE.md)** for complete backend setup instructions.
-
-**Quick Steps**:
-1. Set up MySQL database
-2. Create database tables (SQL in guide)
-3. Configure PHP environment
-4. Set up API endpoints
-5. Configure Huawei ISC credentials
-6. Set file upload permissions
-
-## 📖 Documentation
-
-### Main Documentation Files
-
-- **[CAMERA_IMPLEMENTATION.md](CAMERA_IMPLEMENTATION.md)** - Camera capture implementation details
-- **[SYSTEM_DOCUMENTATION.md](SYSTEM_DOCUMENTATION.md)** - Complete system overview, workflows, and features
-- **[PHP_BACKEND_GUIDE.md](PHP_BACKEND_GUIDE.md)** - Full PHP backend implementation guide
-
-### Key Innovation: Real-Time Camera Verification
-
-#### Why Camera-Only?
-- **Authentic Verification** - Photos must be taken at job site in real-time
-- **Fraud Prevention** - No ability to reuse old/stock photos
-- **Timestamp Accuracy** - Photo capture time matches job completion
-- **Proof of Presence** - Visual evidence team was actually on-site
-
-#### How It Works
-```
-Open Camera → Position Team → Capture Photo → 
-Review/Retake → Confirm → Submit with Job
+Navigate to the `frontend` directory and start the Vite development server:
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-### Process Flow
-```
-Site Work → Camera Capture → Job Submission → 
-Database Storage → Huawei Sync → Billing Verification
-```
+### 2. Backend Setup
 
-## 🔧 Configuration
+The backend handles the core logic and database interactions.
 
-### Frontend API Configuration
+1. Ensure you have a local PHP environment running (e.g., XAMPP, MAMP, or a standalone PHP server).
+2. Configure your MySQL database and run the initial setup script to create the necessary tables (`job_records`, etc.).
+3. Update your database configuration (e.g., inside `backend/config/`) to match your local MySQL credentials.
+4. Host the `backend` folder on your local server (e.g., `http://localhost/backend`) so the frontend API calls can reach it.
 
-Edit `/src/app/utils/api.ts`:
+### 3. API Configuration
 
+To link the frontend and backend, configure your local environment API base URL in the frontend:
 ```typescript
-const API_BASE_URL = "/api"; // Update with your PHP backend URL
+// Example: src/app/utils/api.ts or related config
+const API_BASE_URL = "http://localhost/backend";
 ```
 
-### Backend Configuration
+## 📂 Project Structure
 
-Edit `config/database.php`:
-
-```php
-private $host = "localhost";
-private $database_name = "contractor_jobs";
-private $username = "your_username";
-private $password = "your_password";
+```text
+/
+├── backend/                  # PHP REST API Endpoints
+│   ├── config/               # Database and environment configurations
+│   └── submission/           # API handlers (read/write data & images)
+├── frontend/                 # React Application
+│   ├── src/                  # React components, contexts, and hooks
+│   ├── package.json          # Dependency management
+│   └── vite.config.ts        # Vite configuration
+└── README.md                 # Project Documentation
 ```
 
-Edit `config/env.php`:
+## 💡 Developer Notes
 
-```php
-'huawei_api_url' => getenv('HUAWEI_API_URL'),
-'huawei_api_key' => getenv('HUAWEI_API_KEY'),
-```
-
-## 📊 Database Schema
-
-### Tables
-
-1. **team_photos** - Reusable team verification photos
-2. **job_records** - Completed job records
-3. **huawei_sync_log** - Sync attempt history
-
-See [PHP_BACKEND_GUIDE.md](PHP_BACKEND_GUIDE.md) for complete schema.
-
-## 🔐 Security
-
-- ✅ SQL injection prevention (prepared statements)
-- ✅ File upload validation (type, size)
-- ✅ XSS prevention (React escaping)
-- ✅ CORS configuration
-- ⚠️ Add authentication for production
-- ⚠️ Use HTTPS in production
-- ⚠️ Implement rate limiting
-
-## 🧪 Testing
-
-### Current Implementation
-- Frontend uses mock data for demonstration
-- API calls logged to console
-- Ready for PHP backend integration
-
-### Testing with Backend
-1. Set up PHP backend following guide
-2. Update API_BASE_URL in api.ts
-3. Test each workflow:
-   - Submit job with new photo
-   - Submit job with existing photo
-   - View job records
-   - Sync to Huawei
-   - Manage team photos
-
-## 📱 User Guide
-
-### Submitting a Job
-1. Navigate to "Submit Job" tab
-2. Fill in job details (number, location, type, date/time)
-3. Click "Capture Team Photo" button
-4. Allow camera permissions when prompted
-5. Position team members in frame
-6. Click capture button (circular button at bottom)
-7. Review photo - retake if needed, or confirm
-8. Add personnel names manually
-9. Add job notes (optional)
-10. Click "Submit Job Completion"
-11. System syncs to Huawei automatically
-
-### Viewing Job Records
-1. Navigate to "Job Records" tab
-2. Use search to find specific jobs
-3. Filter by sync status
-4. Click "Sync to Huawei" for pending jobs
-5. Export to CSV for reporting
-
-## 🛠️ API Endpoints
-
-### Job Management
-- `POST /api/jobs` - Submit job completion (with base64 photo)
-- `GET /api/jobs` - Get all job records
-- `POST /api/jobs/{id}/sync-huawei` - Sync to Huawei
-
-See [PHP_BACKEND_GUIDE.md](PHP_BACKEND_GUIDE.md) and [CAMERA_IMPLEMENTATION.md](CAMERA_IMPLEMENTATION.md) for detailed endpoint specs.
-
-## 🐛 Troubleshooting
-
-### Camera Issues
-- Ensure camera permissions are granted
-- Use HTTPS (required for camera access)
-- Check if camera is in use by another app
-- Try different browser if issues persist
-- See [CAMERA_IMPLEMENTATION.md](CAMERA_IMPLEMENTATION.md) for detailed troubleshooting
-
-### Sync Failures
-- Verify Huawei API credentials
-- Check network connectivity
-- Review sync logs for errors
-- Use manual retry function
-
-### Database Errors
-- Verify database connection settings
-- Check table schema is correct
-- Ensure proper permissions
-
-## 🚀 Deployment
-
-### Production Checklist
-- [ ] Set up production database
-- [ ] Configure web server (Apache/Nginx)
-- [ ] Set environment variables
-- [ ] Configure CORS for production domain
-- [ ] Enable HTTPS
-- [ ] Set up file upload directory with permissions
-- [ ] Configure Huawei API credentials
-- [ ] Test all workflows end-to-end
-- [ ] Set up database backups
-- [ ] Configure error logging
-- [ ] Implement authentication system
-
-## 📈 Future Enhancements
-
-- [ ] Mobile app (iOS/Android)
-- [ ] QR code scanning for site info
-- [ ] GPS verification
-- [ ] Digital signatures
-- [ ] Real-time notifications
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support
-- [ ] Offline mode with sync
-- [ ] Automated reports
-
-## 📞 Support
-
-For issues or questions:
-1. Check [SYSTEM_DOCUMENTATION.md](SYSTEM_DOCUMENTATION.md)
-2. Review [PHP_BACKEND_GUIDE.md](PHP_BACKEND_GUIDE.md)
-3. Check console for API errors
-4. Review sync logs in database
-
-## 📄 License
-
-This project is proprietary software for contractor job management.
-
-## 👥 Credits
-
-Built with modern web technologies:
-- React + TypeScript
-- Tailwind CSS
-- PHP + MySQL
-- Huawei ISC Integration
-
----
-
-**Version**: 1.0.0  
-**Last Updated**: March 13, 2026
-
-For complete documentation, see [SYSTEM_DOCUMENTATION.md](SYSTEM_DOCUMENTATION.md)
+This project was developed as an MVP (Minimum Viable Product)/Prototype to demonstrate cross-environment readiness and secure device-feature integration. The codebase effectively bridges a modern JavaScript SPA with a robust, traditional PHP API. While currently configured for a localized setup to facilitate easy sharing and reviewing, the architecture inherently supports standard cloud and containerized deployment workflows (e.g., Vercel + Railway environments).
