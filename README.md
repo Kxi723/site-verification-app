@@ -51,8 +51,8 @@ This project is configured for local development and testing.
 
 You must configure `.env` files for both the frontend and backend to ensure they communicate with the database and each other.
 
-**Backend (`backend/config/.env`):**
-Create an `.env` file in `backend/config` to configure your MySQL connection.
+**Backend (`backend/.env`):**
+Create an `.env` file in `backend/` to configure your MySQL connection.
 ```env
 DB_HOST=...
 DB_PORT=...
